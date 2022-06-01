@@ -1,26 +1,35 @@
-# Use the latest 2.1 version of CircleCI pipeline process engine.
-# See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
 
-# Define a job to be invoked later in a workflow.
-# See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
-  say-hello:
-    # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
-    # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
+  test:
     docker:
       - image: cimg/base:stable
-    # Add steps to the job
-    # See: https://circleci.com/docs/2.0/configuration-reference/#steps
+    environment:
+      RAFTT_SUPPRESS_PROGRESS_BAR: "true"
+      RAFTT_DISABLE_PRODUCT_ANALYTICS: "true"
     steps:
       - checkout
       - run:
-          name: "Say hello"
-          command: "echo Hello, World!"
+          name: "setup raftt"
+          command: |
+            curl https://get.raftt.io/install | bash
+            raftt init -g $GITHUB_TOKEN
+      - run:
+          name: "create env"
+          command: |
+            raftt up
+      - run:
+          name: "test"
+          command: |
+            raftt status
+            raftt sh dev -- echo hello
+      - run:
+          name: "cleanup raftt envs"
+          command: |
+            raftt down -fad
+          when: always
 
-# Invoke jobs via workflows
-# See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
-  say-hello-workflow:
+  test-workflow:
     jobs:
-      - say-hello
+      - test
